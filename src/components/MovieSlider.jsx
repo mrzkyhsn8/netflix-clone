@@ -21,6 +21,8 @@ export default React.memo(function MovieSlider({ data, title }) {
     }
   };
 
+  if (!data || data.length === 0) return null;
+
   return (
     <Container
       // controlVisibility={controlVisibility}
@@ -36,7 +38,7 @@ export default React.memo(function MovieSlider({ data, title }) {
         </div>
         <div className="slider" ref={listRef}>
           {data.map((movie, index) => {
-            return <Card movieData={movie} index={index} key={movie.id} />;
+            return <Card movieData={movie} index={index} key={`${movie.id}-${index}`} />;
           })}
         </div>
         <div
@@ -53,11 +55,13 @@ const Container = styled.div`
   gap: 0.7rem;
   position: relative;
   padding: 1rem 0;
+  text-align: left;
   h1 {
-    margin-left: 5px;
+    margin-left: 50px;
     font-size: 25px;
     font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
     color: white;
+    text-align: left;
   }
   .wrapper {
     .slider {
@@ -66,7 +70,7 @@ const Container = styled.div`
       gap: 0.6rem;
       transform: translateX(0px);
       transition: 1s ease-in-out;
-      margin-left: 5px;
+      margin-left: 50px;
     }
     .slider-action {
       display: flex;

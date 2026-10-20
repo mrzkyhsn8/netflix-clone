@@ -15,39 +15,59 @@ const initialState = {
 };
 
 export const getGenres = createAsyncThunk("netflix/genres", async () => {
-  const {
-    data: { genres },
-  } = await axios.get(
-    `${TMDB_BASE_URL}/genre/movie/list?api_key=${MY_API_KEY}`
-  );
-  // console.log(genres);
-  return genres;
+  try {
+    const [movieGenresRes, tvGenresRes] = await Promise.all([
+      axios.get(`${TMDB_BASE_URL}/genre/movie/list?api_key=${MY_API_KEY}`),
+      axios.get(`${TMDB_BASE_URL}/genre/tv/list?api_key=${MY_API_KEY}`),
+    ]);
+    const combined = [...(movieGenresRes.data?.genres || [])];
+    (tvGenresRes.data?.genres || []).forEach((tg) => {
+      if (!combined.some((g) => g.id === tg.id)) {
+        combined.push(tg);
+      }
+    });
+    return combined;
+  } catch (error) {
+    console.error("Failed to fetch genres:", error);
+    return [];
+  }
 });
 
 const arrayOfMovieData = (array, moviesArray, genres) => {
-  array.forEach((movie) => {
+  array?.forEach((movie) => {
+    if (!movie || !movie.backdrop_path) return;
+
     const moviesGenres = [];
-    movie.genre_ids.forEach((genre) => {
-      const name = genres.find(({ id }) => id === genre);
+    movie.genre_ids?.forEach((genre) => {
+      const name = genres?.find(({ id }) => id === genre);
       if (name) moviesGenres.push(name.name);
     });
-    if (movie.backdrop_path)
+
+    if (!moviesArray.some((m) => m.id === movie.id)) {
       moviesArray.push({
         id: movie.id,
-        name: movie?.original_name ? movie.original_name : movie.original_title,
+        name: movie?.title || movie?.name || movie?.original_title || movie?.original_name || "Unknown",
         image: movie.backdrop_path,
         genres: moviesGenres.slice(0, 2),
       });
+    }
   });
 };
 
 const getMovieData = async (api, genres, paging = false) => {
   const moviesArray = [];
   for (let i = 1; moviesArray.length < 80 && i < 10; i++) {
-    const {
-      data: { results },
-    } = await axios.get(`${api}${paging ? `&page=${i}` : ""}`);
-    arrayOfMovieData(results, moviesArray, genres);
+    try {
+      const {
+        data: { results },
+      } = await axios.get(`${api}${paging ? `&page=${i}` : ""}`);
+      if (results && Array.isArray(results)) {
+        arrayOfMovieData(results, moviesArray, genres);
+      }
+    } catch (err) {
+      console.error(`Error fetching page ${i}:`, err);
+      break;
+    }
   }
   return moviesArray;
 };
@@ -63,7 +83,6 @@ export const fetchMovies = createAsyncThunk(
       genres,
       true
     );
-    // console.log(data)
   }
 );
 
@@ -77,6 +96,9 @@ const NetflixSlice = createSlice({
     });
     builder.addCase(fetchMovies.fulfilled, (state, action) => {
       state.movies = action.payload;
+    });
+    builder.addCase(fetchMovies.rejected, (state, action) => {
+      console.error("fetchMovies rejected:", action.error);
     });
   },
 });
