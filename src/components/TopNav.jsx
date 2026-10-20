@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { AiOutlineLogout } from "react-icons/ai";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,27 +9,40 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 const TopNav = ({ isScrolled }) => {
   const navLinks = [
     { name: "Home", link: "/" },
-    { name: "TV Show", link: "/tv" },
-    { name: "My List", link: "/myList" },
+    { name: "TV Shows", link: "/tv" },
     { name: "Movies", link: "/movies" },
+    { name: "My List", link: "/myList" },
   ];
 
   const navigate = useNavigate();
 
-  onAuthStateChanged(firebaseAuth, (currentUser) => {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (currentUser) => {
       if (!currentUser) navigate("/login");
     });
-  
+    return () => unsubscribe();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(firebaseAuth);
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   return (
     <NavContainer>
       <nav className={`${isScrolled ? "scrolled" : "notScrolled"}`}>
         <div className="leftSide">
           <div className="logo">
-            <img
-              src="https://res.cloudinary.com/ehizeex-shop/image/upload/v1668265433/NetflixApp/2560px-Netflix_2015_logo.svg_rbicwl_knwp6f.png"
-              alt="netflix logo"
-            />
+            <Link to="/">
+              <img
+                src="https://res.cloudinary.com/ehizeex-shop/image/upload/v1668265433/NetflixApp/2560px-Netflix_2015_logo.svg_rbicwl_knwp6f.png"
+                alt="netflix logo"
+              />
+            </Link>
           </div>
           <ul className="links">
             {navLinks.map(({ name, link }) => {
@@ -42,7 +55,7 @@ const TopNav = ({ isScrolled }) => {
           </ul>
         </div>
         <div className="rightSide">
-          <button onClick={() => signOut(firebaseAuth)}>
+          <button onClick={handleSignOut} title="Log Out">
             <AiOutlineLogout />
           </button>
         </div>

@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import TopNav from "../components/TopNav";
-import Card from "../components/Card";
 import { fetchMovies, getGenres } from "../store";
 import SliderContainer from "../components/SliderContainer";
 
@@ -21,7 +20,7 @@ const Netflix = () => {
 
   useEffect(() => {
     dispatch(getGenres());
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (genresLoaded) {
@@ -29,10 +28,13 @@ const Netflix = () => {
     }
   }, [dispatch, genresLoaded]);
 
-  window.onscroll = () => {
-    setIsScrolled(window.pageYOffset === 0 ? false : true);
-    return () => (window.onscroll = null);
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.pageYOffset !== 0);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // console.log(movies)
 
